@@ -30,9 +30,6 @@ for k = 1:nCases
     powerSignal = mean(SigClean.^2);
     powerNoise  = mean(NoiseOnly.^2);
     
-
-
-
     if powerNoise > 0
         vSNR_dB(k) = 10*log10(powerSignal / powerNoise);
     else

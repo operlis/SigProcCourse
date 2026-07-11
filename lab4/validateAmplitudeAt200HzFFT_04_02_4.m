@@ -9,7 +9,7 @@ clear; close all; clc;
 % Parameters
 % =========================================================================
 fHz         = 200;
-nNumSamples = 500;                  % 20 Hz FFT resolution, 200 Hz fits exactly
+nNumSamples = 10000;                  
 vAmplitude  = [100, 300, 500, 600];
 
 nCases = length(vAmplitude);
