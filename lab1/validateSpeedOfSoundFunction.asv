@@ -1,0 +1,33 @@
+close all;
+clear;
+clc;
+
+% Validate 4 diffrerent values of Temeratures when one is our of the range
+% [0,1000]
+
+fprintf("Speed of sound when Temp = 50 celcius:  %s m/s \n", getSpeedOfSoundFromCelciusTemp(50));
+fprintf("Speed of sound when Temp = 350 celcius:  %s m/s \n", getSpeedOfSoundFromCelciusTemp(350));
+fprintf("Speed of sound when Temp = 750 celcius:  %s m/s \n", getSpeedOfSoundFromCelciusTemp(750));
+fprintf("Speed of sound when Temp = 1050 celcius:  %s m/s \n", getSpeedOfSoundFromCelciusTemp(1050));
+%%
+% Validate 5 temperatures from returned table:
+speedOfSoundTable = getSpeedOfSoundTable();
+wantedTemps = [50, 350, 500, 750, 950];
+
+temps = speedOfSoundTable(1, :);
+speeds = speedOfSoundTable(2, :);
+
+returnedSpeeds = zeros(size(wantedTemps));
+
+for k = 1:length(wantedTemps)
+    index = find(temps == wantedTemps(k), 1);
+    returnedSpeeds(k) = speeds(index);
+    fprintf('T = %d C -> v = %.2f m/s\n', wantedTemps(k), returnedSpeeds(k));
+end
+
+%%
+% Plot speed of sound as a function of temperature.
+speedOfSoundTable = getSpeedOfSoundTable();
+
+
+

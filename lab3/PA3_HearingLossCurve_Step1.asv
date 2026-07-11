@@ -1,0 +1,146 @@
+% PA3_HearingLossCurve_Step1.m
+%
+% Purpose: Build a personal Hearing Loss Curve in the frequency range
+%          20 Hz - 20 kHz, separately for Left ear and Right ear.
+%          Step 1: Coarse scan with few frequency points to validate code.
+%
+% Method:  For each test frequency, a pure tone is played at ascending
+%          amplitudes starting from a low level (inaudible). The user
+%          presses 'y' when the tone is first heard.
+%          A warm-start mechanism reuses the previous threshold to reduce
+%          the number of steps needed per frequency.
+%
+% Signal:  Stereo WAV - Left ear test uses left channel only (right = 0),
+%          Right ear test uses right channel only (left = 0).
+%
+% Note:    Use a quiet room and good earphones.
+%          Medical conclusions must NOT be drawn from these results.
+
+% -----------------------------------------------------------------------
+% Parameters
+% -----------------------------------------------------------------------
+nSampleRateHz    = 44100;   % Sample rate [Hz]
+nDurationSec     = 1.5;     % Tone duration per step [sec]
+nBitsPerSample   = 16;      % Bit depth
+
+% Three-zone grid: dense at low/high ends, sparse in the flat mid region
+% Justified by Step 1 results - curve changes rapidly below 500 Hz and above 4 kHz
+vFreqHz_A = logspace(log10(20),   log10(500),   7);    % Zone A: low freq, steep rise
+vFreqHz_B = logspace(log10(500),  log10(4000),  5);    % Zone B: mid freq, flat region
+vFreqHz_C = logspace(log10(4000), log10(20000), 8);    % Zone C: high freq, roll-off
+vFreqHz   = unique([vFreqHz_A, vFreqHz_B, vFreqHz_C]); % merge, remove duplicates
+
+% -----------------------------------------------------------------------
+% Tunable parameters - adjust per subject
+% -----------------------------------------------------------------------
+nStartDB_initial = -60;   % Starting amplitude for first frequency [dB]
+nStepDB          = 5;     % Amplitude increment per step [dB]
+nMaxDB           = 0;     % Maximum amplitude ceiling [dB]
+nBackSteps       = 5;     % Steps below last threshold to start next
+                          % frequency (warm-start offset - tune per subject)
+
+% -----------------------------------------------------------------------
+% Measurement - Left Ear, then Right Ear
+% -----------------------------------------------------------------------
+vEarNames     = {'Left', 'Right'};
+mThreshold_dB = NaN(2, length(vFreqHz));   % rows: ears, cols: frequencies
+
+for nEar = 1:2
+    fprintf('\n=== Testing %s Ear ===\n', vEarNames{nEar});
+    fprintf('Place earphone on %s ear only. Press ENTER to begin.\n', vEarNames{nEar});
+    pause;
+
+    nCurrentStartDB = nStartDB_initial;   % reset warm-start for each ear
+
+    for nFreqIdx = 1:length(vFreqHz)
+        nFreq = vFreqHz(nFreqIdx);
+        fprintf('\nFrequency: %.1f Hz | Starting at: %.0f dB\n', nFreq, nCurrentStartDB);
+
+        % Generate time vector and pure tone
+        vTime      = (0 : nSampleRateHz * nDurationSec - 1) / nSampleRateHz;
+        vTone_mono = sin(2 * pi * nFreq * vTime);   % normalized amplitude
+
+        bHeard = false;
+        nAmpDB = nCurrentStartDB;
+
+        while nAmpDB <= nMaxDB
+            nAmpLinear   = 10^(nAmpDB / 20);          % dB to linear amplitude
+            vTone_scaled = nAmpLinear * vTone_mono;
+
+            % Build stereo signal - active channel = ear under test
+            if nEar == 1   % Left ear: signal on left channel, silence on right
+                mStereo = [vTone_scaled', zeros(length(vTone_scaled), 1)];
+            else           % Right ear: silence on left, signal on right channel
+                mStereo = [zeros(length(vTone_scaled), 1), vTone_scaled'];
+            end
+
+            % Play tone and wait for playback to finish
+            sound(mStereo, nSampleRateHz, nBitsPerSample);
+            pause(nDurationSec + 0.3);
+
+            sAnswer = input(sprintf('  [%.0f dB] Did you hear the tone? (y/n): ', nAmpDB), 's');
+
+            if strcmpi(sAnswer, 'y')
+                mThreshold_dB(nEar, nFreqIdx) = nAmpDB;
+                fprintf('  --> Threshold: %.0f dB\n', nAmpDB);
+
+                % Warm-start: begin next frequency nBackSteps below this threshold
+                nCurrentStartDB = nAmpDB - nBackSteps * nStepDB;
+                bHeard = true;
+                break;
+            end
+
+            nAmpDB = nAmpDB + nStepDB;
+        end
+
+        if ~bHeard
+            fprintf('  --> NOT heard up to %.0f dB\n', nMaxDB);
+            mThreshold_dB(nEar, nFreqIdx) = NaN;
+            nCurrentStartDB = nStartDB_initial;   % reset if tone was not heard
+        end
+    end
+
+    fprintf('\n%s ear measurement complete.\n', vEarNames{nEar});
+end
+
+% -----------------------------------------------------------------------
+% Convert raw dB values to Hearing Level [dB HL]
+% HL = how many dB above the starting reference were needed to hear
+% Higher HL = worse hearing (consistent with standard audiogram convention)
+% -----------------------------------------------------------------------
+mThreshold_HL = mThreshold_dB - nStartDB_initial;   % e.g., heard at -35 dB -> HL = 25 dB
+
+% -----------------------------------------------------------------------
+% Figure 1 - Hearing Loss Curve (Step 1 - Coarse Scan)
+% -----------------------------------------------------------------------
+figure('Name', 'PA3 - Hearing Loss Curve - Step 1');
+
+semilogx(vFreqHz, mThreshold_HL(1, :), 'b-o', 'LineWidth', 1.5, 'MarkerSize', 7, ...
+    'DisplayName', 'Left Ear');
+hold on;
+semilogx(vFreqHz, mThreshold_HL(2, :), 'r-s', 'LineWidth', 1.5, 'MarkerSize', 7, ...
+    'DisplayName', 'Right Ear');
+hold off;
+
+xlabel('Frequency [Hz]');
+ylabel('Hearing Level [dB HL]');
+title('Graph 1 - Personal Hearing Loss Curve - Step 1 (Coarse Scan)');
+legend('Location', 'southwest');
+grid on;
+set(gca, 'XTick', [20 50 100 200 500 1000 2000 5000 10000 20000]);
+set(gca, 'XTickLabel', {'20','50','100','200','500','1k','2k','5k','10k','20k'});
+set(gca, 'YDir', 'reverse');
+xlim([20 20000]);
+
+% -----------------------------------------------------------------------
+% Print threshold table to console
+% -----------------------------------------------------------------------
+fprintf('\n--- Threshold Summary ---\n');
+fprintf('%-12s %-14s %-14s\n', 'Freq [Hz]', 'Left [dB HL]', 'Right [dB HL]');
+fprintf('%s\n', repmat('-', 1, 42));
+for nFreqIdx = 1:length(vFreqHz)
+    fprintf('%-12.1f %-14.1f %-14.1f\n', ...
+        vFreqHz(nFreqIdx), ...
+        mThreshold_HL(1, nFreqIdx), ...
+        mThreshold_HL(2, nFreqIdx));
+end

@@ -1,0 +1,66 @@
+close all;
+clear;
+clc;
+
+v=343;  % m/s
+f=1000; % Hz
+w=2*pi*f;   % angular frequency
+lambda=v/f; % wavelength
+k=2*pi/lambda;  % k-vector
+x=-2:0.01:2;
+y=x;
+[X,Y]=meshgrid(x,y);
+A=1;    % amplitude
+t=linspace(0,pi,50);
+
+snapshots = [10, 25, 40];   % indices of frames to capture
+
+for a=1:length(t)
+    r=sqrt(X.^2+Y.^2);
+    E=(A./r).*exp(1i.*(k.*r-w.*t(a)));  % wave equation
+    pcolor(X,Y,real(E)); shading flat; axis equal; 
+    caxis([-5 5]);
+    drawnow;
+    
+    if ismember(a, snapshots)
+        saveas(gcf, sprintf('snapshot_t%d.fig', a))
+    end
+end
+%% 
+% ------ data from static pictures ------
+% in order to calculate the velocity from the pictures:
+% from each pictues we will get lambda by caclulating the distance between
+% two yellow circles. (r2 - r1) or (x2-x1 when y2 and y1 are 0)
+% then the velocity will be: 
+% v = lambda * f (f = )
+% v_2_3 = (r3 - r2) / (t3 - t2)
+
+
+x1 = 0.0;
+y1 = 0.0;
+r1  = sqrt(x1^2 + y1^2);
+fprintf('x1 = %.2f, y1 = %.2f --> r1 = %.4f\n', x1,y1,r1);
+
+
+x2 = 0.18;
+y2 = 0.17;
+r2  = sqrt(x2^2 + y2^2);
+fprintf('x2 = %.2f, y2 = %.2f --> r2 = %.4f\n', x2,y2,r2);
+
+x3 = 0.36;
+y3 = 0.34;
+r3  = sqrt(x3^2 + y3^2);
+fprintf('x3 = %.2f, y3 = %.2f --> r3 = %.4f\n', x3,y3,r3);
+
+t1 = t(10);  
+t2 = t(25);  
+t3 = t(40); 
+
+
+
+v_12 = (r2 - r1) / (t2 - t1)
+v_23 = (r3 - r2) / (t3 - t2)
+
+
+
+

@@ -1,0 +1,56 @@
+% createDecayingSine.m - Creates, plays and plots decaying sine signal
+% TO DO 02.01.1 - Sinusoid with Exponential Decay: x(t) = A * exp(-a*t) * sin(2*pi*f*t)
+% Creates, plays and plots decaying sine signal
+
+
+% --- Signal Parameters ---
+nSampleRateHz = 44100;
+nFreqHz       = 1000;% f
+nAmplitude    = 32766; % A
+nDecayRate    = 3; % a
+nDurationSec  = 2;
+
+audioData = createDecayingSine(nFreqHz, nAmplitude, nDecayRate, nDurationSec, nSampleRateHz);
+
+saveAudioToWav(audioData, nSampleRateHz, 'decayingSine.wav');
+
+vTime = (0 : length(audioData)-1) / nSampleRateHz;
+
+figure;
+plot(vTime, audioData);
+title('Sinusoid with Exponential Decay - f = 1kHz, a=3');
+xlabel('Time [sec]');
+ylabel('Amplitude [int16]');
+grid on;
+
+
+% TO DO 02.01.1 - Sinusoid with Exponential Decay: x(t) = A * exp(-a*t) * sin(2*pi*f*t)
+% Creates, plays and plots decaying sine signal
+
+% --- Signal Parameters ---
+nSampleRateHz = 44100;  % Sampling rate [Hz] - standard CD quality (44100 samples/sec)
+nFreqHz       = 1000;   % f - frequency [Hz] - mid-range tone, clearly audible and easy to verify visually
+nAmplitude    = 32766;  % A - max amplitude for int16 (= 32767-1, one count of headroom to prevent overflow)
+nDecayRate    = 3;      % a - exponential decay rate: higher -> faster decay. a=3 gives ~1.2 sec natural decay
+nDurationSec  = 2;      % Signal duration [sec] - long enough to show full decay to silence
+
+% --- Create, save and play the signal ---
+% createDecayingSine returns int16 array: A * exp(-a*t) * sin(2*pi*f*t)
+audioData = createDecayingSine(nFreqHz, nAmplitude, nDecayRate, nDurationSec, nSampleRateHz);
+
+% Save to WAV file for external playback and verification
+saveAudioToWav(audioData, nSampleRateHz, 'decayingSine.wav');
+
+% --- Build time axis for plotting ---
+% t = [0, 1/Fs, 2/Fs, ..., (N-1)/Fs] — total N = nDurationSec * nSampleRateHz = 88200 samples
+vTime = (0 : length(audioData)-1) / nSampleRateHz;
+
+% --- Plot the signal ---
+% At this time scale (2 sec), 1kHz oscillations are too dense to resolve individually —
+% the plot shows the exponential envelope e^(-3t) as the outer boundary of the waveform
+figure;
+plot(vTime, audioData);
+title('Sinusoid with Exponential Decay - f = 1kHz, a=3');
+xlabel('Time [sec]');
+ylabel('Amplitude [int16]');
+grid on;
